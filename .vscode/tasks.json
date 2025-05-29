@@ -20,7 +20,7 @@
                 "-lfreetype",
                 "-lwinmm",
                 "-lgdi32",
-                "-mwindows"
+                // "-mwindows"
             ],
             "options": {
                 "cwd": "${fileDirname}"
