@@ -17,9 +17,15 @@ int main() {
     const int roadWidth = 500;
     const int laneCount = 4;
     const float laneWidth = static_cast<float>(roadWidth) / laneCount;
+    int level = 1;
+    float levelTimer = 0.f;
+    float levelDuration = 10.f;
+    float enemySpeed = 3.f;
 
     RenderWindow window(VideoMode({windowWidth, windowHeight}), "Cars");
     window.setFramerateLimit(60);
+
+    sf::Clock clock;
 
     RectangleShape road(Vector2f(static_cast<float>(roadWidth), static_cast<float>(windowHeight)));
     road.setFillColor(Color(50, 50, 50));
@@ -29,27 +35,23 @@ int main() {
     menu.setFillColor(Color(30, 30, 30));
     menu.setPosition(Vector2f(static_cast<float>(roadWidth), 0.f));
 
-    // Création des lignes en tirets
     std::vector<std::vector<RectangleShape>> dashedLaneLines;
     const float dashLength = 40.f;
     const float gapLength = 20.f;
     const float lineWidth = 4.f;
-    
+
     for (int i = 1; i < laneCount; ++i) {
         std::vector<RectangleShape> dashesForThisLane;
         float currentY = 0.f;
-        
+
         while (currentY < windowHeight) {
-            // Créer un tiret
             RectangleShape dash(Vector2f(lineWidth, dashLength));
             dash.setFillColor(Color::White);
             dash.setPosition(Vector2f(i * laneWidth - lineWidth / 2.f, currentY));
             dashesForThisLane.push_back(dash);
-            
-            // Passer au prochain tiret (tiret + espace)
             currentY += dashLength + gapLength;
         }
-        
+
         dashedLaneLines.push_back(dashesForThisLane);
     }
 
@@ -61,9 +63,8 @@ int main() {
 
     PlayerCar player(carTexture, laneCount, laneWidth, static_cast<float>(windowHeight));
 
-    // Declare enemyTextures in the correct scope
     std::vector<Texture> enemyTextures(4);
-    if (!enemyTextures[0].loadFromFile("assets/enemie/enemi1.png") ||
+    if (!enemyTextures[0].loadFromFile("assets/enemie/enemi4.png") ||
         !enemyTextures[1].loadFromFile("assets/enemie/enemi2.png") ||
         !enemyTextures[2].loadFromFile("assets/enemie/enemi3.png") ||
         !enemyTextures[3].loadFromFile("assets/enemie/enemi5.png")) {
@@ -71,19 +72,43 @@ int main() {
         return -1;
     }
 
-
     std::vector<EnemyCar> enemies;
     float spawnTimer = 0.f;
-    float spawnDelay = 1.5f; // secondes
+    float spawnDelay = 1.5f;
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
+    Font font;
+    if (!font.openFromFile("assets/fonts/Gatrich.otf")) {
+        std::cout << "Font introuvable" << std::endl;
+    }
+
+    // Text levelText("Niveau: 1", font, 24);
+    // levelText.setFillColor(Color::White);
+    // levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
+
+    Text levelText(font, "Niveua: 1", 24);
+
+    levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
+    levelText.setFillColor(Color::White);
 
     while (window.isOpen()) {
+        float deltaTime = clock.restart().asSeconds();
+
         while (std::optional event = window.pollEvent()) {
             if (event->is<Event::Closed>()) {
                 window.close();
             }
+        }
+
+        // Gestion des niveaux
+        levelTimer += deltaTime;
+        if (levelTimer >= levelDuration) {
+            level++;
+            levelTimer = 0.f;
+            enemySpeed += 0.5f;
+            std::cout << "🚀 Niveau atteint : " << level << ", Vitesse ennemie: " << enemySpeed << std::endl;
+            levelText.setString("Niveau: " + std::to_string(level));
         }
 
         float dashSpeed = 3.0f;
@@ -96,7 +121,7 @@ int main() {
             }
         }
 
-        spawnTimer += 1.f / 60.f;
+        spawnTimer += deltaTime;
         if (spawnTimer >= spawnDelay) {
             spawnTimer = 0.f;
 
@@ -106,17 +131,16 @@ int main() {
             float carWidth = enemyTextures[typeIndex].getSize().x * 0.5f;
             float laneX = lane * laneWidth + (laneWidth - carWidth) / 2.f;
 
-            enemies.emplace_back(enemyTextures[typeIndex], laneX, 3.0f);
+            enemies.emplace_back(enemyTextures[typeIndex], laneX, enemySpeed);
         }
 
         for (auto& enemy : enemies) {
             enemy.update();
         }
 
-        // Suppression ennemis hors écran
         enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
             [&](const EnemyCar& e) {
-                return e.getBounds().size.y > windowHeight;
+                return e.getBounds().position.y > windowHeight;
             }), enemies.end());
 
         bool collisionDetected = false;
@@ -124,8 +148,7 @@ int main() {
             if (!player.isJumping()) {
                 sf::FloatRect playerBounds = player.getBounds();
                 sf::FloatRect enemyBounds = enemy.getBounds();
-                
-                // Vérification manuelle de l'intersection AABB (Axis-Aligned Bounding Box)
+
             if (playerBounds.position.x < enemyBounds.position.x + enemyBounds.size.x &&
                 playerBounds.position.x + playerBounds.size.x > enemyBounds.position.x &&
                 playerBounds.position.y < enemyBounds.position.y + enemyBounds.size.y &&
@@ -138,8 +161,9 @@ int main() {
 
         if (collisionDetected) {
             std::cout << "💥 Collision détectée ! Game Over !" << std::endl;
-            window.close(); // ou passer à un écran Game Over
+            window.close();
         }
+
         player.handleInput();
         player.update();
 
@@ -158,6 +182,7 @@ int main() {
             enemy.draw(window);
 
         window.draw(menu);
+        window.draw(levelText);
         window.display();
     }
 
