@@ -75,6 +75,7 @@ int main() {
     std::vector<EnemyCar> enemies;
     float spawnTimer = 0.f;
     float spawnDelay = 1.5f; // secondes
+
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
 
@@ -96,11 +97,15 @@ int main() {
         }
 
         spawnTimer += 1.f / 60.f;
-        if(spawnTimer >= spawnDelay) {
+        if (spawnTimer >= spawnDelay) {
             spawnTimer = 0.f;
+
             int lane = rand() % laneCount;
             int typeIndex = rand() % 4;
-            float laneX = lane * laneWidth + (laneWidth - enemyTextures[typeIndex].getSize().x * 0.5f) / 2.f;
+
+            float carWidth = enemyTextures[typeIndex].getSize().x * 0.5f;
+            float laneX = lane * laneWidth + (laneWidth - carWidth) / 2.f;
+
             enemies.emplace_back(enemyTextures[typeIndex], laneX, 3.0f);
         }
 
@@ -114,6 +119,27 @@ int main() {
                 return e.getBounds().size.y > windowHeight;
             }), enemies.end());
 
+        bool collisionDetected = false;
+        for (const auto& enemy : enemies) {
+            if (!player.isJumping()) {
+                sf::FloatRect playerBounds = player.getBounds();
+                sf::FloatRect enemyBounds = enemy.getBounds();
+                
+                // Vérification manuelle de l'intersection AABB (Axis-Aligned Bounding Box)
+            if (playerBounds.position.x < enemyBounds.position.x + enemyBounds.size.x &&
+                playerBounds.position.x + playerBounds.size.x > enemyBounds.position.x &&
+                playerBounds.position.y < enemyBounds.position.y + enemyBounds.size.y &&
+                playerBounds.position.y + playerBounds.size.y > enemyBounds.position.y) {
+                collisionDetected = true;
+                break;
+            }
+            }
+        }
+
+        if (collisionDetected) {
+            std::cout << "💥 Collision détectée ! Game Over !" << std::endl;
+            window.close(); // ou passer à un écran Game Over
+        }
         player.handleInput();
         player.update();
 
