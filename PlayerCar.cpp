@@ -10,19 +10,28 @@ PlayerCar::PlayerCar(const Texture& texture, int laneCount, float laneWidth, flo
         float x = currentLane * laneWidth + (laneWidth - carWidth) / 2.f;
         float y = roadHeight - carSprite.getGlobalBounds().size.y - 30.f;
         carSprite.setPosition(Vector2f(x, y));
+        baseY = y;
     }
-
 
 void PlayerCar::handleInput() {
-    // Lane switching (left/right movement)
-    if (Keyboard::isKeyPressed(Keyboard::Key::Left) || Keyboard::isKeyPressed(Keyboard::Key::A)) {
+    // Variables statiques pour éviter les mouvements répétés
+    static bool leftPressed = false;
+    static bool rightPressed = false;
+    static bool spacePressed = false;
+    
+    // Lane switching (left/right movement) - une seule fois par pression
+    bool leftCurrentlyPressed = Keyboard::isKeyPressed(Keyboard::Key::Left) || Keyboard::isKeyPressed(Keyboard::Key::A);
+    bool rightCurrentlyPressed = Keyboard::isKeyPressed(Keyboard::Key::Right) || Keyboard::isKeyPressed(Keyboard::Key::D);
+    bool spaceCurrentlyPressed = Keyboard::isKeyPressed(Keyboard::Key::Space);
+    
+    if (leftCurrentlyPressed && !leftPressed) {
         moveLeft();
     }
-    if (Keyboard::isKeyPressed(Keyboard::Key::Right) || Keyboard::isKeyPressed(Keyboard::Key::D)) {
+    if (rightCurrentlyPressed && !rightPressed) {
         moveRight();
     }
     
-    // Forward/backward movement
+    // Forward/backward movement (continu)
     if (Keyboard::isKeyPressed(Keyboard::Key::Up) || Keyboard::isKeyPressed(Keyboard::Key::W)) {
         moveUp();
     }
@@ -30,14 +39,18 @@ void PlayerCar::handleInput() {
         moveDown();
     }
     
-    // Jump
-    if (Keyboard::isKeyPressed(Keyboard::Key::Space)) {
+    // Jump - une seule fois par pression
+    if (spaceCurrentlyPressed && !spacePressed) {
         jump();
     }
+    
+    // Mettre à jour l'état des touches
+    leftPressed = leftCurrentlyPressed;
+    rightPressed = rightCurrentlyPressed;
+    spacePressed = spaceCurrentlyPressed;
 }
 
 void PlayerCar::update() {
-    
     if (isJumping) {
         jumpVelocity += 0.5f;
         jumpOffset += jumpVelocity;
@@ -48,8 +61,11 @@ void PlayerCar::update() {
             jumpVelocity = 0;
         }
 
-        auto pos = carSprite.getPosition();
-        carSprite.setPosition(Vector2f(pos.x, roadHeight - carSprite.getGlobalBounds().size.y - 30.f + jumpOffset));
+
+        carSprite.setPosition(Vector2f(carSprite.getPosition().x, baseY + jumpOffset));
+    } else {
+
+        baseY = carSprite.getPosition().y;
     }
 }
 
@@ -74,11 +90,25 @@ void PlayerCar::moveRight() {
 }
 
 void PlayerCar::moveUp() {
-    carSprite.move(Vector2f(0.f, - carSpeed));
+    float newY = carSprite.getPosition().y - carSpeed;
+    if (newY >= 0) {
+        carSprite.setPosition(Vector2f(carSprite.getPosition().x, newY));
+        if (!isJumping) {
+            baseY = newY;
+        }
+    }
 }
 
 void PlayerCar::moveDown() {
-    carSprite.move(Vector2f(0.f, carSpeed));
+    float newY = carSprite.getPosition().y + carSpeed;
+    float carHeight = carSprite.getGlobalBounds().size.y;
+
+    if (newY + carHeight <= roadHeight) {
+        carSprite.setPosition(Vector2f(carSprite.getPosition().x, newY));
+        if (!isJumping) {
+            baseY = newY;
+        }
+    }
 }
 
 void PlayerCar::jump() {

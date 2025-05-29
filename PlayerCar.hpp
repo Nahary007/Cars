@@ -16,6 +16,7 @@ private:
     float jumpOffset;
     bool isJumping;
     float jumpVelocity;
+    float baseY;
 
     int laneCount;
     float laneWidth;
