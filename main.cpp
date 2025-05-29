@@ -2,7 +2,13 @@
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 #include "PlayerCar.hpp"
+#include "EnemyCar.hpp"
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
+#include <algorithm>
+#include <vector>
+
 using namespace sf;
 
 int main() {
@@ -25,9 +31,9 @@ int main() {
 
     // Création des lignes en tirets
     std::vector<std::vector<RectangleShape>> dashedLaneLines;
-    const float dashLength = 40.f;  // Longueur d'un tiret
-    const float gapLength = 20.f;   // Longueur de l'espace entre les tirets
-    const float lineWidth = 4.f;   // Largeur de la ligne
+    const float dashLength = 40.f;
+    const float gapLength = 20.f;
+    const float lineWidth = 4.f;
     
     for (int i = 1; i < laneCount; ++i) {
         std::vector<RectangleShape> dashesForThisLane;
@@ -48,12 +54,28 @@ int main() {
     }
 
     Texture carTexture;
-    if(!carTexture.loadFromFile("assets/voiture.png")) {
+    if(!carTexture.loadFromFile("assets/joueur/voiture.png")) {
         std::cout << "Erreur : impossible de charger l'image" << std::endl;
         return -1;
     }
 
     PlayerCar player(carTexture, laneCount, laneWidth, static_cast<float>(windowHeight));
+
+    // Declare enemyTextures in the correct scope
+    std::vector<Texture> enemyTextures(4);
+    if (!enemyTextures[0].loadFromFile("assets/enemie/enemi1.png") ||
+        !enemyTextures[1].loadFromFile("assets/enemie/enemi2.png") ||
+        !enemyTextures[2].loadFromFile("assets/enemie/enemi3.png") ||
+        !enemyTextures[3].loadFromFile("assets/enemie/enemi5.png")) {
+        std::cerr << "Erreur chargement textures ennemies" << std::endl;
+        return -1;
+    }
+
+
+    std::vector<EnemyCar> enemies;
+    float spawnTimer = 0.f;
+    float spawnDelay = 1.5f; // secondes
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
 
 
     while (window.isOpen()) {
@@ -73,6 +95,25 @@ int main() {
             }
         }
 
+        spawnTimer += 1.f / 60.f;
+        if(spawnTimer >= spawnDelay) {
+            spawnTimer = 0.f;
+            int lane = rand() % laneCount;
+            int typeIndex = rand() % 4;
+            float laneX = lane * laneWidth + (laneWidth - enemyTextures[typeIndex].getSize().x * 0.5f) / 2.f;
+            enemies.emplace_back(enemyTextures[typeIndex], laneX, 3.0f);
+        }
+
+        for (auto& enemy : enemies) {
+            enemy.update();
+        }
+
+        // Suppression ennemis hors écran
+        enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+            [&](const EnemyCar& e) {
+                return e.getBounds().size.y > windowHeight;
+            }), enemies.end());
+
         player.handleInput();
         player.update();
 
@@ -86,6 +127,10 @@ int main() {
         }
 
         player.draw(window);
+
+        for (auto& enemy : enemies)
+            enemy.draw(window);
+
         window.draw(menu);
         window.display();
     }

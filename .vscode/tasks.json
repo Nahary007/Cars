@@ -9,6 +9,7 @@
                 "-g",
                 "${file}",
                 "PlayerCar.cpp",
+                "EnemyCar.cpp",
                 "-I\"D:/Sources/SFML_sources/include\"",
                 "-DSFML_STATIC",
                 "-o",
