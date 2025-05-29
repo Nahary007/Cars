@@ -73,10 +73,20 @@ int main() {
             }
         }
 
+        float dashSpeed = 3.0f;
+        for (auto& laneOfDashes : dashedLaneLines) {
+            for (auto& dash : laneOfDashes) {
+                dash.move(Vector2f(0.f, dashSpeed));
+                if (dash.getPosition().y > windowHeight) {
+                    dash.setPosition(Vector2f(dash.getPosition().x, -dash.getSize().y));
+                }
+            }
+        }
+
+
         window.clear();
         window.draw(road);
 
-        // Dessiner toutes les lignes en tirets
         for (const auto& laneOfDashes : dashedLaneLines) {
             for (const auto& dash : laneOfDashes) {
                 window.draw(dash);
