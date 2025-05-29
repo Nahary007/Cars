@@ -2,7 +2,7 @@
 using namespace sf;
 
 PlayerCar::PlayerCar(const Texture& texture, int laneCount, float laneWidth, float roadHeight)
-    : carSprite(texture), currentLane(1), carSpeed(5.f), jumpOffset(0.f), isJumping(false), jumpVelocity(0.f),
+    : carSprite(texture), currentLane(1), carSpeed(5.f), jumpOffset(0.f), isJumpingFlag(false), jumpVelocity(0.f),
       laneCount(laneCount), laneWidth(laneWidth), roadHeight(roadHeight)
     {
         carSprite.setScale(Vector2f(0.5f, 0.5f));
@@ -51,13 +51,13 @@ void PlayerCar::handleInput() {
 }
 
 void PlayerCar::update() {
-    if (isJumping) {
+    if (isJumpingFlag) {
         jumpVelocity += 0.5f;
         jumpOffset += jumpVelocity;
 
         if (jumpOffset >= 0) {
             jumpOffset = 0;
-            isJumping = false;
+            isJumpingFlag = false;
             jumpVelocity = 0;
         }
 
@@ -93,7 +93,7 @@ void PlayerCar::moveUp() {
     float newY = carSprite.getPosition().y - carSpeed;
     if (newY >= 0) {
         carSprite.setPosition(Vector2f(carSprite.getPosition().x, newY));
-        if (!isJumping) {
+        if (!isJumping()) {
             baseY = newY;
         }
     }
@@ -105,15 +105,23 @@ void PlayerCar::moveDown() {
 
     if (newY + carHeight <= roadHeight) {
         carSprite.setPosition(Vector2f(carSprite.getPosition().x, newY));
-        if (!isJumping) {
+        if (!isJumping()) {
             baseY = newY;
         }
     }
 }
 
 void PlayerCar::jump() {
-    if (!isJumping) {
-        isJumping = true;
+    if (!isJumpingFlag) {
+        isJumpingFlag = true;
         jumpVelocity = -10.f;
     }
+}
+
+FloatRect PlayerCar::getBounds() const {
+    return carSprite.getGlobalBounds();
+}
+
+bool PlayerCar::isJumping() const {
+    return isJumpingFlag;
 }

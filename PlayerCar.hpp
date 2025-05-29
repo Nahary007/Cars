@@ -8,13 +8,16 @@ public:
     void handleInput();
     void update();
     void draw(sf::RenderWindow& window);
+    sf::FloatRect getBounds() const;
+    bool isJumping() const;
+
 
 private:
     sf::Sprite carSprite;
     int currentLane;
     float carSpeed;
     float jumpOffset;
-    bool isJumping;
+    bool isJumpingFlag;
     float jumpVelocity;
     float baseY;
 
