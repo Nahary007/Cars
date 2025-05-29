@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#include "PlayerCar.hpp"
 #include <iostream>
 using namespace sf;
 
@@ -52,19 +53,8 @@ int main() {
         return -1;
     }
 
-    Sprite playerCar(carTexture);
-    playerCar.setScale(Vector2f(0.5f, 0.5f));
+    PlayerCar player(carTexture, laneCount, laneWidth, static_cast<float>(windowHeight));
 
-    int currentLane = 1;
-
-    // Correction : utiliser size.x et size.y au lieu de position.x et position.y
-    float carWidth = playerCar.getGlobalBounds().size.x;
-    float carHeight = playerCar.getGlobalBounds().size.y;
-    
-    float carX = currentLane * laneWidth + (laneWidth - carWidth) / 2.f;
-    float carY = windowHeight - carHeight - 30.f;
-
-    playerCar.setPosition(Vector2f(carX, carY));
 
     while (window.isOpen()) {
         while (std::optional event = window.pollEvent()) {
@@ -83,6 +73,8 @@ int main() {
             }
         }
 
+        player.handleInput();
+        player.update();
 
         window.clear();
         window.draw(road);
@@ -93,7 +85,7 @@ int main() {
             }
         }
 
-        window.draw(playerCar);
+        player.draw(window);
         window.draw(menu);
         window.display();
     }

@@ -8,6 +8,7 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
+                "PlayerCar.cpp",
                 "-I\"D:/Sources/SFML_sources/include\"",
                 "-DSFML_STATIC",
                 "-o",
