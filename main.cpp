@@ -11,6 +11,63 @@
 
 using namespace sf;
 
+bool showMenu(RenderWindow& window) {
+    sf::Texture backgroundTexture;
+    if (!backgroundTexture.loadFromFile("assets/bg.png")) {
+        return false;
+    }
+    Sprite backgroundSprite(backgroundTexture);
+
+    Font font;
+    if (!font.openFromFile("assets/fonts/arial.ttf")) {
+        return false;
+    }
+
+    Text title(font, "Cars", 48);
+    title.setFillColor(Color::Yellow);
+    title.setPosition(Vector2f(200.f, 100.f));
+
+    Text startButton(font, "Start", 36);
+    startButton.setFillColor(Color::White);
+    startButton.setPosition(Vector2f(350.f, 250.f));
+
+    Text quitButton(font, "Quit", 36);
+    quitButton.setFillColor(Color::White);
+    quitButton.setPosition(Vector2f(350.f, 320.f));
+
+    while (window.isOpen()) {
+        while (std::optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>()) {
+                window.close();
+            }
+
+            // Correction : utilisation de la nouvelle syntaxe SFML 3.0.0
+            if (event->is<Event::MouseButtonPressed>()) {
+                const auto& mouseButton = event->getIf<Event::MouseButtonPressed>();
+                if (mouseButton->button == Mouse::Button::Left) {
+                    Vector2f mousePos = window.mapPixelToCoords(Vector2i(mouseButton->position.x, mouseButton->position.y));
+
+                    if (startButton.getGlobalBounds().contains(mousePos)) {
+                        return true; // L'utilisateur a cliqué sur Start
+                    } else if (quitButton.getGlobalBounds().contains(mousePos)) {
+                        window.close();
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        window.clear();
+        window.draw(backgroundSprite);
+        window.draw(title);
+        window.draw(startButton);
+        window.draw(quitButton);
+        window.display();
+    }
+
+    return false;
+}
+
 int main() {
     const int windowWidth = 800;
     const int windowHeight = 600;
@@ -25,6 +82,12 @@ int main() {
     RenderWindow window(VideoMode({windowWidth, windowHeight}), "Cars");
     window.setFramerateLimit(60);
 
+    // ✅ AFFICHAGE DU MENU AU DÉMARRAGE
+    if (!showMenu(window)) {
+        return 0; // L'utilisateur a quitté ou fermé la fenêtre
+    }
+
+    // Si on arrive ici, l'utilisateur a cliqué sur "Start"
     sf::Clock clock;
 
     RectangleShape road(Vector2f(static_cast<float>(roadWidth), static_cast<float>(windowHeight)));
@@ -83,11 +146,7 @@ int main() {
         std::cout << "Font introuvable" << std::endl;
     }
 
-    // Text levelText("Niveau: 1", font, 24);
-    // levelText.setFillColor(Color::White);
-    // levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
-
-    Text levelText(font, "Niveua: 1", 24);
+    Text levelText(font, "Niveau: 1", 24);
     Text jumpText(font, "Nombre saut: 5 ", 24);
 
     levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
@@ -96,6 +155,7 @@ int main() {
     jumpText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 100.f));
     jumpText.setFillColor(Color::White);
 
+    // BOUCLE PRINCIPALE DU JEU
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
@@ -157,13 +217,13 @@ int main() {
                 sf::FloatRect playerBounds = player.getBounds();
                 sf::FloatRect enemyBounds = enemy.getBounds();
 
-            if (playerBounds.position.x < enemyBounds.position.x + enemyBounds.size.x &&
-                playerBounds.position.x + playerBounds.size.x > enemyBounds.position.x &&
-                playerBounds.position.y < enemyBounds.position.y + enemyBounds.size.y &&
-                playerBounds.position.y + playerBounds.size.y > enemyBounds.position.y) {
-                collisionDetected = true;
-                break;
-            }
+                if (playerBounds.position.x < enemyBounds.position.x + enemyBounds.size.x &&
+                    playerBounds.position.x + playerBounds.size.x > enemyBounds.position.x &&
+                    playerBounds.position.y < enemyBounds.position.y + enemyBounds.size.y &&
+                    playerBounds.position.y + playerBounds.size.y > enemyBounds.position.y) {
+                    collisionDetected = true;
+                    break;
+                }
             }
         }
 
