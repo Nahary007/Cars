@@ -88,9 +88,13 @@ int main() {
     // levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
 
     Text levelText(font, "Niveua: 1", 24);
+    Text jumpText(font, "Nombre saut: 5 ", 24);
 
     levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
     levelText.setFillColor(Color::White);
+
+    jumpText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 100.f));
+    jumpText.setFillColor(Color::White);
 
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
@@ -107,8 +111,12 @@ int main() {
             level++;
             levelTimer = 0.f;
             enemySpeed += 0.5f;
-            std::cout << "🚀 Niveau atteint : " << level << ", Vitesse ennemie: " << enemySpeed << std::endl;
+            player.resetJumpCount();
+            
+            // ✅ Cette ligne met à jour l'affichage dynamiquement
             levelText.setString("Niveau: " + std::to_string(level));
+            
+            std::cout << "🚀 Niveau atteint : " << level << ", Vitesse ennemie: " << enemySpeed << std::endl;
         }
 
         float dashSpeed = 3.0f;
@@ -181,7 +189,10 @@ int main() {
         for (auto& enemy : enemies)
             enemy.draw(window);
 
+        jumpText.setString("Sauts restants: " + std::to_string(player.getJumpCount()));
+
         window.draw(menu);
+        window.draw(jumpText);
         window.draw(levelText);
         window.display();
     }
