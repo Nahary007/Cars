@@ -41,7 +41,10 @@ void PlayerCar::handleInput() {
     
     // Jump - une seule fois par pression
     if (spaceCurrentlyPressed && !spacePressed) {
-        jump();
+        if (!isJumpingFlag && jumpCount > 0) {
+            jump();              
+            decrementJumpCount();
+        }
     }
     
     // Mettre à jour l'état des touches
@@ -124,4 +127,17 @@ FloatRect PlayerCar::getBounds() const {
 
 bool PlayerCar::isJumping() const {
     return isJumpingFlag;
+}
+
+int PlayerCar::getJumpCount() const {
+    return jumpCount;
+}
+
+void PlayerCar::resetJumpCount() {
+    jumpCount = 3; // Tu peux adapter ce nombre
+}
+
+void PlayerCar::decrementJumpCount() {
+    if (jumpCount > 0)
+        jumpCount--;
 }

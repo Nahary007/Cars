@@ -10,7 +10,9 @@ public:
     void draw(sf::RenderWindow& window);
     sf::FloatRect getBounds() const;
     bool isJumping() const;
-
+    int getJumpCount() const;
+    void resetJumpCount();
+    void decrementJumpCount();
 
 private:
     sf::Sprite carSprite;
@@ -20,6 +22,7 @@ private:
     bool isJumpingFlag;
     float jumpVelocity;
     float baseY;
+    int jumpCount;
 
     int laneCount;
     float laneWidth;
