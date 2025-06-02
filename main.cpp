@@ -68,6 +68,83 @@ bool showMenu(RenderWindow& window) {
     return false;
 }
 
+bool showGameOver(RenderWindow& window) {
+    Font font;
+    if (!font.openFromFile("assets/fonts/arial.ttf")) {
+        return false;
+    }
+
+    Text gameOverText(font,"Game Over", 48);
+    gameOverText.setFillColor(Color::Red);
+    gameOverText.setPosition(Vector2f(250.f, 150.f));
+
+    Text retryButton(font,"Rejouer", 36);
+    retryButton.setFillColor(Color::White);
+    retryButton.setPosition(Vector2f(320.f, 250.f));
+
+    Text quitButton(font,"Quitter", 36);
+    quitButton.setFillColor(Color::White);
+    quitButton.setPosition(Vector2f(320.f, 320.f));
+
+    while (window.isOpen()) {
+        while (std::optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>()) {
+                window.close();
+                return false;
+            }
+
+            if (event->is<Event::MouseButtonPressed>()) {
+                const auto& mouseButton = event->getIf<Event::MouseButtonPressed>();
+                if (mouseButton->button == Mouse::Button::Left) {
+                    Vector2f mousePos = window.mapPixelToCoords(Vector2i(mouseButton->position.x, mouseButton->position.y));
+
+                    if (retryButton.getGlobalBounds().contains(mousePos)) {
+                        return true;
+                    } else if (quitButton.getGlobalBounds().contains(mousePos)) {
+                        window.close();
+                        return false;
+                    }
+                }
+            }
+        }
+
+        window.clear(Color::Black);
+        window.draw(gameOverText);
+        window.draw(retryButton);
+        window.draw(quitButton);
+        window.display();
+    }
+
+    return false;
+}
+
+void showExplosion(RenderWindow& window, Vector2f position) {
+    Texture explosionTexture;
+    if (!explosionTexture.loadFromFile("assets/boom.png")) {
+        std::cerr << "Erreur chargement explosion.png" << std::endl;
+        return;
+    }
+
+    Sprite explosionSprite(explosionTexture);
+    explosionSprite.setOrigin(Vector2f(explosionTexture.getSize().x / 2.f, explosionTexture.getSize().y / 2.f));
+    explosionSprite.setPosition(position);
+
+    window.clear();
+    window.draw(explosionSprite);
+    window.display();
+
+    Clock waitClock;
+    while (waitClock.getElapsedTime().asSeconds() < 2.0f) {
+        while (std::optional event = window.pollEvent()) {
+            if (event->is<Event::Closed>()) {
+                window.close();
+            }
+        }
+    }
+}
+
+
+
 int main() {
     const int windowWidth = 800;
     const int windowHeight = 600;
@@ -82,12 +159,11 @@ int main() {
     RenderWindow window(VideoMode({windowWidth, windowHeight}), "Cars");
     window.setFramerateLimit(60);
 
-    // ✅ AFFICHAGE DU MENU AU DÉMARRAGE
+  
     if (!showMenu(window)) {
-        return 0; // L'utilisateur a quitté ou fermé la fenêtre
+        return 0;
     }
 
-    // Si on arrive ici, l'utilisateur a cliqué sur "Start"
     sf::Clock clock;
 
     RectangleShape road(Vector2f(static_cast<float>(roadWidth), static_cast<float>(windowHeight)));
@@ -155,7 +231,6 @@ int main() {
     jumpText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 100.f));
     jumpText.setFillColor(Color::White);
 
-    // BOUCLE PRINCIPALE DU JEU
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
@@ -165,15 +240,13 @@ int main() {
             }
         }
 
-        // Gestion des niveaux
         levelTimer += deltaTime;
         if (levelTimer >= levelDuration) {
             level++;
             levelTimer = 0.f;
             enemySpeed += 0.5f;
             player.resetJumpCount();
-            
-            // ✅ Cette ligne met à jour l'affichage dynamiquement
+
             levelText.setString("Niveau: " + std::to_string(level));
             
             std::cout << "🚀 Niveau atteint : " << level << ", Vitesse ennemie: " << enemySpeed << std::endl;
@@ -228,9 +301,20 @@ int main() {
         }
 
         if (collisionDetected) {
-            std::cout << "💥 Collision détectée ! Game Over !" << std::endl;
-            window.close();
+            std::cout << "💥 Collision détectée ! Explosion !" << std::endl;
+
+            showExplosion(window, player.getBounds().position);
+
+            bool retry = showGameOver(window);
+            if (retry) {
+                main();
+            } else {
+                window.close();
+            }
+            return 0;
         }
+
+
 
         player.handleInput();
         player.update();
