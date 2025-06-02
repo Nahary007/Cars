@@ -293,9 +293,8 @@ int main() {
             }
         }
 
-        // Mise à jour du score (10 points par seconde)
         scoreTimer += deltaTime;
-        if (scoreTimer >= 0.1f) { // Mise à jour du score chaque 0.1 seconde
+        if (scoreTimer >= 0.1f) {
             score += 1;
             scoreTimer = 0.f;
             scoreText.setString("Score: " + std::to_string(score));
@@ -307,7 +306,7 @@ int main() {
             levelTimer = 0.f;
             enemySpeed += 0.5f;
             player.resetJumpCount();
-            score += 100 * level; // Bonus de niveau
+            score += 100 * level;
 
             levelText.setString("Niveau: " + std::to_string(level));
             
