@@ -8,8 +8,27 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <fstream>
 
 using namespace sf;
+
+int loadHighScore() {
+    std::ifstream file("highscore.txt");
+    int highscore = 0;
+    if (file.is_open()) {
+        file >> highscore;
+        file.close();
+    }
+    return highscore;
+}
+
+void saveHighScore(int score) {
+    std::ofstream file("highscore.txt");
+    if (file.is_open()) {
+        file << score;
+        file.close();
+    }
+}
 
 bool showMenu(RenderWindow& window) {
     sf::Texture backgroundTexture;
@@ -23,9 +42,16 @@ bool showMenu(RenderWindow& window) {
         return false;
     }
 
+    // Charger le meilleur score
+    int highScore = loadHighScore();
+
     Text title(font, "Cars", 48);
     title.setFillColor(Color::Yellow);
     title.setPosition(Vector2f(200.f, 100.f));
+
+    Text highScoreText(font, "Meilleur Score: " + std::to_string(highScore), 24);
+    highScoreText.setFillColor(Color::Green);
+    highScoreText.setPosition(Vector2f(250.f, 180.f));
 
     Text startButton(font, "Start", 36);
     startButton.setFillColor(Color::White);
@@ -41,14 +67,13 @@ bool showMenu(RenderWindow& window) {
                 window.close();
             }
 
-            // Correction : utilisation de la nouvelle syntaxe SFML 3.0.0
             if (event->is<Event::MouseButtonPressed>()) {
                 const auto& mouseButton = event->getIf<Event::MouseButtonPressed>();
                 if (mouseButton->button == Mouse::Button::Left) {
                     Vector2f mousePos = window.mapPixelToCoords(Vector2i(mouseButton->position.x, mouseButton->position.y));
 
                     if (startButton.getGlobalBounds().contains(mousePos)) {
-                        return true; // L'utilisateur a cliqué sur Start
+                        return true;
                     } else if (quitButton.getGlobalBounds().contains(mousePos)) {
                         window.close();
                         return false;
@@ -60,6 +85,7 @@ bool showMenu(RenderWindow& window) {
         window.clear();
         window.draw(backgroundSprite);
         window.draw(title);
+        window.draw(highScoreText);
         window.draw(startButton);
         window.draw(quitButton);
         window.display();
@@ -68,7 +94,7 @@ bool showMenu(RenderWindow& window) {
     return false;
 }
 
-bool showGameOver(RenderWindow& window) {
+bool showGameOver(RenderWindow& window, int currentScore, int highScore, bool isNewRecord) {
     Font font;
     if (!font.openFromFile("assets/fonts/arial.ttf")) {
         return false;
@@ -76,15 +102,27 @@ bool showGameOver(RenderWindow& window) {
 
     Text gameOverText(font,"Game Over", 48);
     gameOverText.setFillColor(Color::Red);
-    gameOverText.setPosition(Vector2f(250.f, 150.f));
+    gameOverText.setPosition(Vector2f(250.f, 100.f));
+
+    Text scoreText(font, "Score: " + std::to_string(currentScore), 32);
+    scoreText.setFillColor(Color::White);
+    scoreText.setPosition(Vector2f(300.f, 170.f));
+
+    Text highScoreText(font, "Meilleur Score: " + std::to_string(highScore), 24);
+    highScoreText.setFillColor(Color::Green);
+    highScoreText.setPosition(Vector2f(270.f, 210.f));
+
+    Text newRecordText(font, "NOUVEAU RECORD!", 28);
+    newRecordText.setFillColor(Color::Yellow);
+    newRecordText.setPosition(Vector2f(250.f, 250.f));
 
     Text retryButton(font,"Rejouer", 36);
     retryButton.setFillColor(Color::White);
-    retryButton.setPosition(Vector2f(320.f, 250.f));
+    retryButton.setPosition(Vector2f(320.f, isNewRecord ? 300.f : 270.f));
 
     Text quitButton(font,"Quitter", 36);
     quitButton.setFillColor(Color::White);
-    quitButton.setPosition(Vector2f(320.f, 320.f));
+    quitButton.setPosition(Vector2f(320.f, isNewRecord ? 370.f : 340.f));
 
     while (window.isOpen()) {
         while (std::optional event = window.pollEvent()) {
@@ -110,6 +148,11 @@ bool showGameOver(RenderWindow& window) {
 
         window.clear(Color::Black);
         window.draw(gameOverText);
+        window.draw(scoreText);
+        window.draw(highScoreText);
+        if (isNewRecord) {
+            window.draw(newRecordText);
+        }
         window.draw(retryButton);
         window.draw(quitButton);
         window.display();
@@ -143,8 +186,6 @@ void showExplosion(RenderWindow& window, Vector2f position) {
     }
 }
 
-
-
 int main() {
     const int windowWidth = 800;
     const int windowHeight = 600;
@@ -155,11 +196,15 @@ int main() {
     float levelTimer = 0.f;
     float levelDuration = 10.f;
     float enemySpeed = 3.f;
+    
+    // Variables pour le score
+    int score = 0;
+    float scoreTimer = 0.f;
+    int highScore = loadHighScore();
 
     RenderWindow window(VideoMode({windowWidth, windowHeight}), "Cars");
     window.setFramerateLimit(60);
 
-  
     if (!showMenu(window)) {
         return 0;
     }
@@ -224,12 +269,20 @@ int main() {
 
     Text levelText(font, "Niveau: 1", 24);
     Text jumpText(font, "Nombre saut: 5 ", 24);
+    Text scoreText(font, "Score: 0", 24);
+    Text highScoreText(font, "Record: " + std::to_string(highScore), 20);
 
     levelText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 20.f));
     levelText.setFillColor(Color::White);
 
     jumpText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 100.f));
     jumpText.setFillColor(Color::White);
+
+    scoreText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 60.f));
+    scoreText.setFillColor(Color::Cyan);
+
+    highScoreText.setPosition(Vector2f(static_cast<float>(roadWidth) + 20.f, 140.f));
+    highScoreText.setFillColor(Color::Green);
 
     while (window.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
@@ -240,12 +293,21 @@ int main() {
             }
         }
 
+        // Mise à jour du score (10 points par seconde)
+        scoreTimer += deltaTime;
+        if (scoreTimer >= 0.1f) { // Mise à jour du score chaque 0.1 seconde
+            score += 1;
+            scoreTimer = 0.f;
+            scoreText.setString("Score: " + std::to_string(score));
+        }
+
         levelTimer += deltaTime;
         if (levelTimer >= levelDuration) {
             level++;
             levelTimer = 0.f;
             enemySpeed += 0.5f;
             player.resetJumpCount();
+            score += 100 * level; // Bonus de niveau
 
             levelText.setString("Niveau: " + std::to_string(level));
             
@@ -281,7 +343,11 @@ int main() {
 
         enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
             [&](const EnemyCar& e) {
-                return e.getBounds().position.y > windowHeight;
+                if (e.getBounds().position.y > windowHeight) {
+                    score += 10; // Bonus pour chaque voiture évitée
+                    return true;
+                }
+                return false;
             }), enemies.end());
 
         bool collisionDetected = false;
@@ -301,20 +367,27 @@ int main() {
         }
 
         if (collisionDetected) {
-            std::cout << "💥 Collision détectée ! Explosion !" << std::endl;
+            std::cout << "💥 Collision détectée ! Score final: " << score << std::endl;
 
             showExplosion(window, player.getBounds().position);
 
-            bool retry = showGameOver(window);
+            // Vérifier et sauvegarder le nouveau record
+            bool isNewRecord = false;
+            if (score > highScore) {
+                highScore = score;
+                saveHighScore(highScore);
+                isNewRecord = true;
+                std::cout << "🏆 NOUVEAU RECORD: " << highScore << std::endl;
+            }
+
+            bool retry = showGameOver(window, score, highScore, isNewRecord);
             if (retry) {
-                main();
+                main(); // Redémarrer le jeu
             } else {
                 window.close();
             }
             return 0;
         }
-
-
 
         player.handleInput();
         player.update();
@@ -338,6 +411,8 @@ int main() {
         window.draw(menu);
         window.draw(jumpText);
         window.draw(levelText);
+        window.draw(scoreText);
+        window.draw(highScoreText);
         window.display();
     }
 
